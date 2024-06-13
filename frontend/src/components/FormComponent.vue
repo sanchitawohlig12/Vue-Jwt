@@ -118,6 +118,8 @@
         </v-col>
         <v-col cols="12" md="12" sm="12">
           <v-file-input
+        
+          v-model="file"
             label="File Upload"
             @change="handleFileUpload($event)"
             accept=".jpeg, .pdf"
@@ -229,7 +231,7 @@ export default {
         file &&
         (file.type === "application/pdf" || file.type === "image/jpeg")
       ) {
-        this.file = file.name;
+        this.file = file;
       } else {
         alert("Only JPEG and PDF files are allowed");
       }
@@ -248,6 +250,7 @@ export default {
       this.languages = [];
       this.formData.endDate = new Date();
       this.dateMenu = false;
+      
       this.$nextTick(() => {
         this.$refs.form.resetValidation();
       });
@@ -271,7 +274,7 @@ export default {
               gender: this.gender,
               languages: this.languages,
               city: this.city,
-              file: this.file,
+              file: this.file.name,
             };
             const response = await axios.post(apiEndpoint, postData, {
               headers: {
