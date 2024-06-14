@@ -2,6 +2,7 @@
   <v-container class="abc">
     <v-form @submit.prevent="handleLogin" class="loginForm">
       <v-row>
+        <v-col align="center">username : user , password: Password</v-col>
         <v-col cols="12" class="text-center">
           <h2 class="header">Login Page</h2>
         </v-col>
@@ -49,7 +50,7 @@ export default {
         password: "",
       },
       show1: false,
-      show2: true,
+      show2: false,
     };
   },
   methods: {

@@ -1,6 +1,3 @@
-
-
-
 <template>
   <v-container class="abcd">
     <v-form ref="form" @submit.prevent="handleSubmit" class="submitForm">
@@ -46,16 +43,65 @@
                 'Invalid mobile number',
             ]"
             placeholder="(844) 448-0110"
+            @input="onMobileInput($event, group)"
             clearable
           ></v-text-field>
         </v-col>
-        <v-col cols="12" md="3" v-if="formGroups.length < 2">
-          <v-btn color="primary" @click="addGroup" block>+ Add More</v-btn>
-        </v-col>
         <v-col cols="12" md="3">
-          <v-btn color="red" @click="removeGroup(index)" v-if="index > 0" block
+    <div v-if="!ShowSecond || !ShowRemove">
+          <v-btn color="primary" @click="addGroup" block>+ Add More</v-btn>
+    </div>
+       
+        </v-col>
+      
+        <v-col cols="12" md="3" sm="12" v-if="ShowSecond && ShowRemove">
+          <v-text-field
+            label="Name"
+            v-model="names"
+            clearable
+            :rules="[
+             
+              (v) =>
+                /^[a-zA-Z ]+$/.test(v) ||
+                'Name must contain only alphabetic characters',
+            ]"
+          ></v-text-field>
+        </v-col>
+        <v-col cols="12" md="3" sm="12" v-if="ShowSecond && ShowRemove">
+          <v-text-field
+            label="Email"
+            v-model="emails"
+            type="email"
+            :rules="[
+           
+              (v) => /.+@.+\..+/.test(v) || 'Email must be valid',
+            ]"
+            clearable
+          ></v-text-field>
+        </v-col>
+        <v-col cols="12" md="3" sm="12" v-if="ShowSecond && ShowRemove">
+          <v-text-field
+            label="Mobile Number"
+            v-model="mobiles"
+            :rules="[
+              
+              (v) =>
+                /^[0-9]{10}$/.test(v.replace(/[^\d]/g, '')) ||
+                'Invalid mobile number',
+            ]"
+            placeholder="(844) 448-0110"
+            @input="onMobileInputForMobiles($event)"
+            clearable
+          ></v-text-field>
+        </v-col>
+      
+        <v-col cols="12" md="3" >
+          <div v-if="ShowSecond && ShowRemove">
+          <v-btn color="red" @click="removeGroup()" block
             >Remove</v-btn
+
           >
+          </div>
         </v-col>
       </v-row>
 
@@ -83,10 +129,11 @@
         <v-col cols="12" md="6" sm="12">
           <v-select
             v-model="city"
-            :items="cities"
+            :items="availableCities"
             label="City"
             multiple
             clearable
+           
             :rules="[(v) => !!city.length || 'At least one city is required']"
           ></v-select>
         </v-col>
@@ -124,6 +171,7 @@
             @change="handleFileUpload($event)"
             accept=".jpeg, .pdf"
             clearable
+            :rules="[(v) => !!file || 'File is required']"
           ></v-file-input>
         </v-col>
       </v-row>
@@ -171,12 +219,17 @@ export default {
         },
       ],
       menu: false,
+      names: "",
+          emails: "",
+          mobiles: "",
       gender: "Female",
       city: [],
       file: null,
       submittedData: [],
       languagesAll: ["Angular", "Vue.js", "React.js"],
       languages: [],
+      ShowSecond:false,
+      ShowRemove:false,
       cities: [
         "Mumbai",
         "Delhi",
@@ -189,16 +242,23 @@ export default {
         "Surat",
         "Indore",
       ],
-      headers: [
-        { title: "Name", value: "name" },
-        { title: "Email", value: "email" },
-        { title: "Mobile", value: "mobile" },
-        { title: "Birth Date", value: "birthDate" },
-        { title: "Gender", value: "gender" },
-        { title: "Languages", value: "languages" },
-        { title: "City", value: "city" },
-        { title: "File", value: "file" },
-      ],
+      // headers: [
+      //   { title: "Name", value: "name" },
+      //   { title: "Email", value: "email" },
+      //   { title: "Mobile", value: "mobile" },
+      //   { title: "Birth Date", value: "birthDate" },
+      //   { title: "Gender", value: "gender" },
+      //   { title: "Languages", value: "languages" },
+      //   { title: "City", value: "city" },
+      //   { title: "File", value: "file" },
+      //   ...(this.ShowSecond === true
+      //     ? [
+      //         { title: "New Header 1", value: "names" },
+      //         { title: "New Header 2", value: "emails" },
+      //         { title: "New Header 3", value: "mobiles" },
+      //       ]
+      //     : []),
+      // ],
       formData: {
         endDate: new Date(),
       },
@@ -206,6 +266,7 @@ export default {
     };
   },
   computed: {
+    
     birthDate() {
       return this.formData.endDate.toLocaleDateString("en-US", {
         year: "numeric",
@@ -213,17 +274,56 @@ export default {
         day: "numeric",
       });
     },
+    headers() {
+      let headers = [
+        { title: 'Name', value: 'name' },
+        { title: 'Email', value: 'email' },
+        { title: 'Mobile', value: 'mobile' },
+        { title: 'Birth Date', value: 'birthDate' },
+        { title: 'Gender', value: 'gender' },
+        { title: 'Languages', value: 'languages' },
+        { title: 'City', value: 'city' },
+        { title: 'File', value: 'file' },
+      ];
+
+      if (this.ShowSecond) {
+        headers = headers.concat([
+          { title: 'Names', value: 'names' },
+          { title: 'Emails', value: 'emails' },
+          { title: 'Mobiles', value: 'mobiles' },
+        ]);
+      }
+
+      return headers;
+    },
+    availableCities() {
+      return this.cities.filter(city => !this.city.includes(city));
+    },
   },
   methods: {
+    formatMobileNumber(value) {
+    const cleaned = ('' + value).replace(/\D/g, '');
+    const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+    if (match) {
+      return `(${match[1]}) ${match[2]}-${match[3]}`;
+    }
+    return value;
+  },
+  onMobileInput(event, group) {
+    const formattedValue = this.formatMobileNumber(event.target.value);
+    group.mobile = formattedValue;
+  },
+  onMobileInputForMobiles(event) {
+    const formattedValue = this.formatMobileNumber(event.target.value);
+    this.mobiles = formattedValue;
+  },
     addGroup() {
-      this.formGroups.push({
-        name: "",
-        email: "",
-        mobile: "",
-      });
+      this.ShowSecond = true
+      this.ShowRemove = true
+      
     },
-    removeGroup(index) {
-      this.formGroups.splice(index, 1);
+    removeGroup() {
+      this.ShowSecond = false
     },
     handleFileUpload(event) {
       const file = event.target.files[0];
@@ -245,6 +345,9 @@ export default {
         },
       ];
       this.gender = "Female";
+      this.names="";
+      this.emails ="";
+      this.mobiles ="";
       this.city = [];
       this.file = null;
       this.languages = [];
@@ -272,9 +375,13 @@ export default {
               ...formData,
               birthDate: this.birthDate,
               gender: this.gender,
+              names: this.names,
+              emails: this.emails,
+          mobiles: this.mobiles,
               languages: this.languages,
               city: this.city,
               file: this.file.name,
+
             };
             const response = await axios.post(apiEndpoint, postData, {
               headers: {
@@ -286,7 +393,9 @@ export default {
           }
           this.submittedData = this.submittedData.concat(responses);
           toast.success("Form submitted successfully");
+        this.ShowRemove = false
           this.resetFields();
+
         } else {
           toast.error("Please fill in all required fields correctly");
         }
